@@ -4,46 +4,30 @@ class ControllerModuleWappiPro extends Controller
 {
     public function status_change($orderId)
     {
-
         $this->load->model('setting/setting');
         $this->load->model('checkout/order');
         $this->load->model('module/wappipro/order');
-
         $settings = $this->model_setting_setting->getSetting('wappipro');
-        $order        = $this->model_checkout_order->getOrder($orderId);
+        $order = $this->model_checkout_order->getOrder($orderId);
         $orderStatusId = $order['order_status_id'];
-        
-        $statusName   = $this->model_module_wappipro_order->getStatusName($orderStatusId);
-        $isActive = isset($settings['wappipro_active']) ? $settings['wappipro_active'] : null;
-        $isSelfSendingActive = isset($settings['wappipro_self_sending_active']) ? $settings['wappipro_self_sending_active'] : null;
-        $language = $this->config->get('config_language');
+        $statusNameRow = $this->getOrderStatus($orderStatusId);
+        $statusName = isset($statusNameRow['name']) ? $statusNameRow['name'] : null;
+        $isSelfSendingActive = isset($settings["wappipro_admin_" . $orderStatusId . "_active"]) ? $settings["wappipro_admin_" . $orderStatusId . "_active"] : '';
 
-
-        if ($this->isModuleEnabled() && !empty($isActive) && !empty($statusName)) {
-
-            $status_name = "";
-
-            if (strpos($statusName, "Canceled Reversal") !== false) {
-                $status_name = "canceled_reversal";
-            } else {
-                $status_name = strtolower($statusName);
-            }
-
-            $isAdminSend = isset($settings["wappipro_admin_" . $status_name . "_active"]) ? $settings["wappipro_admin_" . $status_name . "_active"] : null;
-            $statusActivate = isset($settings["wappipro_" . $status_name . "_active"]) ? $settings["wappipro_" . $status_name . "_active"] : null;
-            $statusMessage = isset($settings["wappipro_" . $status_name . "_message"]) ? $settings["wappipro_" . $status_name . "_message"] : null;  
+        if ($this->isModuleEnabled() && !empty($statusName)) {
+            $statusActivate = isset($settings["wappipro_" . $orderStatusId . "_active"]) ? $settings["wappipro_" . $orderStatusId . "_active"] : '';
+            $statusMessage = isset($settings["wappipro_" . $orderStatusId . "_message"]) ? $settings["wappipro_" . $orderStatusId . "_message"] : '';
 
             if (!empty($statusActivate) && !empty($statusMessage)) {
                 $replace = [
-                    '{order_number}'       => $order['order_id'],
-                    '{order_date}'         => $order['date_added'],
-                    '{order_total}'        => round(
-                        $order['total'] * $order['currency_value'],
-                        2
-                    ) . ' ' . $order['currency_code'],
+                    '{order_number}' => $order['order_id'],
+                    '{order_date}' => $order['date_added'],
+                    '{order_total}' => round($order['total'] * $order['currency_value'], 2) . ' ' . $order['currency_code'],
                     '{billing_first_name}' => $order['payment_firstname'],
-                    '{billing_last_name}'  => $order['payment_lastname'],
-                    '{shipping_method}'    => $order['shipping_method'],
+                    '{billing_last_name}' => $order['payment_lastname'],
+                    '{lastname}' => $order['lastname'],
+                    '{firstname}' => $order['firstname'],
+                    '{shipping_method}' => isset($order['shipping_method']) ? $order['shipping_method'] : '',
                 ];
 
                 foreach ($replace as $key => $value) {
@@ -54,40 +38,36 @@ class ControllerModuleWappiPro extends Controller
                 $username = isset($settings['wappipro_username']) ? $settings['wappipro_username'] : null;        
 
                 if (!empty($apiKey)) {
+                    $platform = isset($this->model_setting_setting->getSetting('wappipro_platform')['wappipro_platform']) ? $this->model_setting_setting->getSetting('wappipro_platform')['wappipro_platform'] : '';
 
-                    $platform = $this->model_setting_setting->getSetting('wappipro_platform')['wappipro_platform'];
+                    $req = [
+                        'postfields' => json_encode([
+                            'recipient' => $order['telephone'],
+                            'body' => $statusMessage,
+                        ]),
+                        'header' => [
+                            "accept: application/json",
+                            "Authorization: " .  $apiKey,
+                            "Content-Type: application/json",
+                        ],
+                        'url' => 'https://wappi.pro/' . $platform . 'api/sync/message/send?profile_id=' . $username,
+                    ];
 
-                    $req = array();
-                    $req['postfields'] = json_encode(array(
-                        'recipient' => $order['telephone'],
-                        'body' => $statusMessage,
-                    ));
-
-                    $req['header'] = array(
-                        "accept: application/json",
-                        "Authorization: " .  $apiKey,
-                        "Content-Type: application/json",
-                    );
-
-                    $req['url'] = 'https://wappi.pro/'. $platform . 'api/sync/message/send?profile_id=' . $username;
-
-                    if (!empty($isSelfSendingActive)) {
-                        $wappipro_self_phone = $this->model_setting_setting->getSetting('wappipro_test')["wappipro_test_phone_number"];
-
-                        if ($wappipro_self_phone != "" && !empty($isAdminSend)) {
-                            $req_self = array();
-                            $req_self['postfields'] = json_encode(array(
-                                'recipient' => $wappipro_self_phone,
-                                'body' => $statusMessage,
-                            ));
-
-                            $req_self['header'] = array(
-                                "accept: application/json",
-                                "Authorization: " .  $apiKey,
-                                "Content-Type: application/json",
-                            );
-
-                            $req_self['url'] = 'https://wappi.pro/'. $platform . 'api/sync/message/send?profile_id=' . $username;
+                    if ($isSelfSendingActive === 'true') {
+                        $wappipro_self_phone = isset($this->model_setting_setting->getSetting('wappipro_test')["wappipro_test_phone_number"]) ? $this->model_setting_setting->getSetting('wappipro_test')["wappipro_test_phone_number"] : '';
+                        if (!empty($wappipro_self_phone)) {
+                            $req_self = [
+                                'postfields' => json_encode([
+                                    'recipient' => $wappipro_self_phone,
+                                    'body' => $statusMessage,
+                                ]),
+                                'header' => [
+                                    "accept: application/json",
+                                    "Authorization: " .  $apiKey,
+                                    "Content-Type: application/json",
+                                ],
+                                'url' => 'https://wappi.pro/' . $platform . 'api/sync/message/send?profile_id=' . $username,
+                            ];
                             $response = json_decode($this->curlito(false, $req_self), true);
                         }
                     }
@@ -107,16 +87,17 @@ class ControllerModuleWappiPro extends Controller
     {
         $sql    = "SELECT * FROM " . DB_PREFIX . "extension WHERE code = 'wappipro'";
         $result = $this->db->query($sql);
-        if ($result->num_rows) {
-            return true;
-        }
+        return $result->num_rows;
+    }
 
-        return false;
+    private function getOrderStatus($orderStatusId)
+    {
+        $query = $this->db->query("SELECT name FROM " . DB_PREFIX . "order_status WHERE order_status_id = '" . (int)$orderStatusId . "' AND language_id = '" . (int)$this->config->get('config_language_id') . "'");
+        return $query->row;
     }
 
     private function curlito($wait, $req, $method = '')
     {
-
         $curl = curl_init();
         $option = array(
             CURLOPT_URL => $req['url'],
@@ -141,10 +122,9 @@ class ControllerModuleWappiPro extends Controller
 
         curl_close($curl);
 
-
         if ($err) {
-            error_log("cURL Error #:" . $err . PHP_EOL, 3, DIR_LOGS . 'wappi-errors.log');
-            return "cURL Error";
+            error_log($err . PHP_EOL, 3, DIR_LOGS . "wappi-errors.log");
+            return "cURL Error #:" . $err;
         } else {
             return $response;
         }

@@ -2,7 +2,6 @@
 
 class ControllerModuleWappiPro extends Controller
 {
-
     private $error       = [];
     private $code        = ['wappipro_test', 'wappipro'];
     public  $testResult  = true;
@@ -14,76 +13,16 @@ class ControllerModuleWappiPro extends Controller
             "validate" => true,
         ],
     ];
-    private $fields               = [
+    private $fields = [
         "wappipro_username" => ["label" => "Username", "type" => "isEmpty", "value" => "", "validate" => true],
         "wappipro_apiKey"   => ["label" => "API Key", "type" => "isEmpty", "value" => "", "validate" => true],
-        "wappipro_active" => ["value" => ""],
-
-        "wappipro_canceled_active"  => ["value" => ""],
-        "wappipro_canceled_message" => ["value" => ""],
-
-        "wappipro_canceled_reversal_active"  => ["value" => ""],
-        "wappipro_canceled_reversal_message" => ["value" => ""],
-
-        "wappipro_self_sending_active"  => ["value" => ""],
-
-        "wappipro_chargeback_active"  => ["value" => ""],
-        "wappipro_chargeback_message" => ["value" => ""],
-
-        "wappipro_complete_active"  => ["value" => ""],
-        "wappipro_complete_message" => ["value" => ""],
-
-        "wappipro_denied_active"  => ["value" => ""],
-        "wappipro_denied_message" => ["value" => ""],
-
-        "wappipro_refunded_active"  => ["value" => ""],
-        "wappipro_refunded_message" => ["value" => ""],
-
-        "wappipro_expired_active"  => ["value" => ""],
-        "wappipro_expired_message" => ["value" => ""],
-
-        "wappipro_failed_active"  => ["value" => ""],
-        "wappipro_failed_message" => ["value" => ""],
-
-        "wappipro_pending_active"  => ["value" => ""],
-        "wappipro_pending_message" => ["value" => ""],
-
-        "wappipro_processed_active"  => ["value" => ""],
-        "wappipro_processed_message" => ["value" => ""],
-
-        "wappipro_processing_active"  => ["value" => ""],
-        "wappipro_processing_message" => ["value" => ""],
-
-        "wappipro_reversed_active"  => ["value" => ""],
-        "wappipro_reversed_message" => ["value" => ""],
-
-        "wappipro_shipped_active"  => ["value" => ""],
-        "wappipro_shipped_message" => ["value" => ""],
-
-        "wappipro_voided_active"  => ["value" => ""],
-        "wappipro_voided_message" => ["value" => ""],
-
-        "wappipro_admin_voided_active"  => ["value" => ""],
-        "wappipro_admin_shipped_active"  => ["value" => ""],
-        "wappipro_admin_reversed_active"  => ["value" => ""],
-        "wappipro_admin_refunded_active"  => ["value" => ""],
-        "wappipro_admin_processing_active"  => ["value" => ""],
-        "wappipro_admin_processed_active"  => ["value" => ""],
-        "wappipro_admin_pending_active"  => ["value" => ""],
-        "wappipro_admin_failed_active"  => ["value" => ""],
-        "wappipro_admin_expired_active"  => ["value" => ""],
-        "wappipro_admin_denied_active"  => ["value" => ""],
-        "wappipro_admin_complete_active"  => ["value" => ""],
-        "wappipro_admin_chargeback_active"  => ["value" => ""],
-        "wappipro_admin_canceled_reversal_active"  => ["value" => ""],
-        "wappipro_admin_canceled_active"  => ["value" => ""],
     ];
 
     public function index()
     {
         if (!$this->isModuleEnabled()) {
             $this->response->redirect(
-                $this->url->link('common/dashboard', 'user_token=' . $this->session->data['user_token'])
+                $this->url->link('common/dashboard', 'token=' . $this->session->data['token'], 'SSL')
             );
             exit;
         }
@@ -97,12 +36,14 @@ class ControllerModuleWappiPro extends Controller
         $this->load->model('design/layout');
         $this->load->model('module/wappipro/validator');
         $this->load->model('module/wappipro/helper');
+        $this->load->model('localisation/order_status');
 
-        $this->submitted();
+        $data['payment_time_string'] = '';
+
+        $this->submitted($data);
         $this->loadFieldsToData($data);
 
         $data['action'] = $this->url->link('module/wappipro', 'token=' . $this->session->data['token'], 'SSL');
-        $data['btn_activate_text'] = $this->language->get('btn_activate_text');
 
         $data['error_warning'] = $this->error;
 
@@ -110,21 +51,21 @@ class ControllerModuleWappiPro extends Controller
 
         $data['about_title'] = $this->language->get('about_title');
         $data['heading_title'] = $this->language->get('heading_title');
-        $data['text_edit']     = $this->language->get('text_edit');
+        $data['text_edit'] = $this->language->get('text_edit');
 
-        $data['btn_test_text']        = $this->language->get('btn_test_text');
+        $data['btn_test_text'] = $this->language->get('btn_test_text');
         $data['btn_test_placeholder'] = $this->language->get('btn_test_placeholder');
         $data['btn_test_description'] = $this->language->get('btn_test_description');
-        $data['btn_test_send']        = $this->language->get('btn_test_send');
+        $data['btn_test_send'] = $this->language->get('btn_test_send');
 
-        $data['btn_wappipro_self_sending_active']        = $this->language->get('btn_wappipro_self_sending_active');
+        $data['btn_wappipro_self_sending_active'] = $this->language->get('btn_wappipro_self_sending_active');
 
-        $data['btn_apiKey_text']        = $this->language->get('btn_apiKey_text');
+        $data['btn_apiKey_text'] = $this->language->get('btn_apiKey_text');
         $data['btn_apiKey_placeholder'] = $this->language->get('btn_apiKey_placeholder');
         $data['btn_apiKey_description'] = $this->language->get('btn_apiKey_description');
-        $data['btn_duble_admin']        = $this->language->get('btn_duble_admin');
+        $data['btn_duble_admin'] = $this->language->get('btn_duble_admin');
 
-        $data['btn_username_text']        = $this->language->get('btn_username_text');
+        $data['btn_username_text'] = $this->language->get('btn_username_text');
         $data['btn_username_placeholder'] = $this->language->get('btn_username_placeholder');
         $data['btn_username_description'] = $this->language->get('btn_username_description');
 
@@ -132,87 +73,83 @@ class ControllerModuleWappiPro extends Controller
 
         $data['btn_status_order_description'] = $this->language->get('btn_status_order_description');
 
-        $data['btn_status_order_canceled']          = $this->language->get('btn_status_order_canceled');
-        $data['btn_status_order_canceled_reversal'] = $this->language->get('btn_status_order_canceled_reversal');
-        $data['btn_status_order_chargebackd']       = $this->language->get('btn_status_order_chargebackd');
-        $data['btn_status_order_complete']          = $this->language->get('btn_status_order_complete');
-        $data['btn_status_order_denied']            = $this->language->get('btn_status_order_denied');
-        $data['btn_status_order_expired']           = $this->language->get('btn_status_order_expired');
-        $data['btn_status_order_failed']            = $this->language->get('btn_status_order_failed');
-        $data['btn_status_order_pending']           = $this->language->get('btn_status_order_pending');
-        $data['btn_status_order_processed']         = $this->language->get('btn_status_order_processed');
-        $data['btn_status_order_processing']        = $this->language->get('btn_status_order_processing');
-        $data['btn_status_order_refunded']          = $this->language->get('btn_status_order_refunded');
-        $data['btn_status_order_reversed']          = $this->language->get('btn_status_order_reversed');
-        $data['btn_status_order_shipped']           = $this->language->get('btn_status_order_shipped');
-        $data['btn_status_order_voided']            = $this->language->get('btn_status_order_voided');
-        $data['instructions_title']  = $this->language->get('instructions_title');
+        $data['instructions_title'] = $this->language->get('instructions_title');
+        $data['step_1'] = $this->language->get('step_1');
+        $data['step_2'] = $this->language->get('step_2');
+        $data['step_3'] = $this->language->get('step_3');
+        $data['step_4'] = $this->language->get('step_4');
+        $data['step_5'] = $this->language->get('step_5');
 
-        $data['step_1']            = $this->language->get('step_1');
-        $data['step_2']            = $this->language->get('step_2');
-        $data['step_3']            = $this->language->get('step_3');
-        $data['step_4']            = $this->language->get('step_4');
-        $data['step_5']            = $this->language->get('step_5');
-
-        $data['order_status_list']    = $this->order_status_list;  // ??
+        $data['order_status_list'] = $this->model_localisation_order_status->getOrderStatuses();
         $data['wappipro_test_result'] = $this->testResult;
 
-        $data['header']      = $this->load->controller('common/header');
+        $settings = $this->model_setting_setting->getSetting('wappipro');
+        $data['wappipro_order_status_active'] = [];
+        $data['wappipro_order_status_message'] = [];
+        $data['wappipro_admin_order_status_active'] = [];
+
+        foreach ($data['order_status_list'] as $status) {
+            $data['wappipro_order_status_active'][$status['order_status_id']] = isset($settings['wappipro_' . $status['order_status_id'] . '_active']) ? $settings['wappipro_' . $status['order_status_id'] . '_active'] : '';
+            $data['wappipro_order_status_message'][$status['order_status_id']] = isset($settings['wappipro_' . $status['order_status_id'] . '_message']) ? $settings['wappipro_' . $status['order_status_id'] . '_message'] : '';
+            $data['wappipro_admin_order_status_active'][$status['order_status_id']] = isset($settings['wappipro_admin_' . $status['order_status_id'] . '_active']) ? $settings['wappipro_admin_' . $status['order_status_id'] . '_active'] : '';
+        }
+
+        $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
-        $data['footer']      = $this->load->controller('common/footer');
+        $data['footer'] = $this->load->controller('common/footer');
 
         $this->response->setOutput($this->load->view('module/wappipro.tpl', $data));
     }
 
     public function isModuleEnabled()
     {
-        $sql    = sprintf("SELECT * FROM %sextension WHERE code = 'wappipro'", DB_PREFIX);
-        $result = $this->db->query($sql);
-        if ($result->num_rows) {
+        $query = $this->db->query("SELECT * FROM " . DB_PREFIX . "extension WHERE code = 'wappipro'");
+        if ($query->num_rows) {
             return true;
         }
 
         return false;
     }
 
-    public function submitted()
+    public function submitted(&$data)
     {
         if (!empty($_POST)) {
+            $this->fields_test['wappipro_test_phone_number']['value'] = isset($_POST['wappipro_test_phone_number']) ? $_POST['wappipro_test_phone_number'] : '';
+            
             if (!empty($_POST['wappipro_test'])) {
                 $this->validateFields();
                 if (empty($_POST['wappipro_apiKey'])) {
-                    $this->error[] = ["error" => "Field api key is required for testing."];
+                    $this->error[] = ["error" => $this->language->get('err_apikey')];
                 }
 
                 if (empty($_POST['wappipro_username'])) {
-                    $this->error[] = ["error" => "Username is required for testing."];
+                    $this->error[] = ["error" => $this->language->get('err_profile')];
                 }
 
                 if (empty($this->error)) {
                     $this->saveFiledsToDB();
-                    $fields = $this->getFieldsValue();
-
                     $settings = $this->model_setting_setting->getSetting('wappipro');
-                    $message = 'Test message from wappi.pro';
+                    $phone = $this->model_setting_setting->getSetting('wappipro_test')['wappipro_test_phone_number'];
 
-                    $this->model_module_wappipro_helper->_save_user($settings);
-                    $platform = $this->model_module_wappipro_helper->get_platform_info($settings);
-                    if ($platform !== false) {
-                        if ($platform === 'wz') $platform = '';
-                        else {
-                            $platform = 't';
-                        }
-                        $this->model_setting_setting->editSetting("wappipro_platform", array('wappipro_platform' => $platform));  
-                        $settings["wappipro_platform"] = $platform;
-                        $result = $this->model_module_wappipro_helper->sendTestSMS(
-                            $settings,
-                            $fields['wappipro_test_phone_number']['value'],
-                            $message
-                        );
-                        $this->testResult = $result;
-                    } else {
+                    $message = $this->language->get('test_message');
+
+                    $data_profile = $this->model_module_wappipro_helper->get_profile_info($settings);
+                    if (isset($data_profile['error'])) {
                         $this->testResult = false;
-                        $this->error[] = ["error" => "Site request error"];
+                        $data["payment_time_string"] = $this->language->get('unvalid_profile');
+                    } else {
+                        $platform = $data_profile['platform'];
+                        if ($platform !== false) {
+                            $this->model_module_wappipro_helper->_save_user($settings);
+                            $data["payment_time_string"] = $data_profile["payment_time_string"];
+                
+                            $this->model_setting_setting->editSetting("wappipro_platform", array('wappipro_platform' => $platform));
+                
+                            $this->testResult = $this->model_module_wappipro_helper->sendTestSMS($settings, $phone, $message);
+                        } else {
+                            $this->testResult = false;
+                            $this->error[] = ["error" => $this->language->get('err_request')];
+                        }
                     }
                 }
             } else {
@@ -232,92 +169,68 @@ class ControllerModuleWappiPro extends Controller
     public function loadFieldsToData(&$data)
     {
         $settings = $this->model_setting_setting->getSetting('wappipro');
+        $settings_test = $this->model_setting_setting->getSetting('wappipro_test');
 
         foreach ($this->fields as $key => $value) {
-            $data[$key] = isset($settings[$key]) ? $settings[$key] : null;
-        }   
-        
+            $data[$key] = isset($settings[$key]) ? $settings[$key] : '';
+        }
+
         foreach ($this->fields_test as $key => $value) {
-            $data[$key] = $this->model_setting_setting->getSetting('wappipro_test')[$key];
+            $data[$key] = isset($settings_test[$key]) ? $settings_test[$key] : '';
+        }
+
+        $order_status_list = $this->model_localisation_order_status->getOrderStatuses();
+        foreach ($order_status_list as $status) {
+            $data['wappipro_' . $status['order_status_id'] . '_active'] = isset($settings['wappipro_' . $status['order_status_id'] . '_active']) ? $settings['wappipro_' . $status['order_status_id'] . '_active'] : '';
+            $data['wappipro_' . $status['order_status_id'] . '_message'] = isset($settings['wappipro_' . $status['order_status_id'] . '_message']) ? $settings['wappipro_' . $status['order_status_id'] . '_message'] : '';
+            $data['wappipro_admin_' . $status['order_status_id'] . '_active'] = isset($settings['wappipro_admin_' . $status['order_status_id'] . '_active']) ? $settings['wappipro_admin_' . $status['order_status_id'] . '_active'] : '';
         }
     }
-    
 
     public function saveFiledsToDB()
     {
-        $fields = $this->getPostFiles();
-
-        foreach (array_keys($fields) as $key) {
-            if (isset($_POST[$key])) {
-                $fields[$key] = $_POST[$key];
-            } else {
-                $fields[$key] = "";
-            }
+        foreach (array_keys($this->fields) as $key) {
+            $this->fields[$key] = isset($_POST[$key]) ? $_POST[$key] : '';
         }
 
-        if (empty($_POST['wappipro_test'])) {
-            $module_fields = [];
-            if ($fields['wappipro_active']) {
-                $module_fields['module_wappipro_status'] = 'true';
-            } else {
-                $module_fields['module_wappipro_status'] = 'false';
-            }
-            $this->model_setting_setting->editSetting("module_wappipro", $module_fields);
+        $order_status_list = $this->model_localisation_order_status->getOrderStatuses();
+        foreach ($order_status_list as $status) {
+            $this->fields['wappipro_' . $status['order_status_id'] . '_message'] = isset($_POST['wappipro_' . $status['order_status_id'] . '_message']) ? $_POST['wappipro_' . $status['order_status_id'] . '_message'] : '';
+            $this->fields['wappipro_' . $status['order_status_id'] . '_active'] = isset($_POST['wappipro_' . $status['order_status_id'] . '_active']) ? 'true' : 'false';
+            $this->fields['wappipro_admin_' . $status['order_status_id'] . '_active'] = isset($_POST['wappipro_admin_' . $status['order_status_id'] . '_active']) ? 'true' : 'false';
         }
-        $this->model_setting_setting->editSetting($this->getCode(), $fields);
+
+        $this->model_setting_setting->editSetting('wappipro', $this->fields);
+        $test_settings = ['wappipro_test_phone_number' => $this->fields_test['wappipro_test_phone_number']['value']];
+        $this->model_setting_setting->editSetting('wappipro_test', $test_settings); 
     }
 
     public function validateFields()
     {
-        $fields = $this->getPostFiles();
-
-        foreach ($fields as $key => $value) {
+        foreach ($this->fields as $key => $value) {
             if (isset($value['validate'])) {
                 $result = call_user_func_array(
                     [$this->model_module_wappipro_validator, $value['type']],
                     [$_POST[$key]]
                 );
                 if (!$result) {
-                    $this->error[] = ["error" => "Field " . $value['label'] . " is required for testing."];
+                    $this->error[] = ["error" => $this->language->get('err_part1') . $value['label'] . $this->language->get('err_part2')];
                 }
             }
         }
     }
 
-    public function getFieldsValue()
-    {
-        $fields = $this->getPostFiles();
-        $settings = $this->model_setting_setting->getSetting('wappipro');
-    
-        foreach ($fields as $key => $value) {
-            $fields[$key]["value"] = isset($settings[$key]) ? $settings[$key] : null;
-        }
-
-        if (isset($fields['wappipro_test_phone_number'])) {
-           $fields['wappipro_test_phone_number']['value'] = $this->model_setting_setting->getSetting('wappipro_test')['wappipro_test_phone_number'];
-        }
-
-        return $fields;
-    }
-
-    public function getPostFiles()
-    {
-        return (!empty($_POST['wappipro_test']) ? $this->fields_test : $this->fields);
-    }
-
-    public function getCode()
-    {
-        return (!empty($_POST['wappipro_test']) ? $this->code[0] : $this->code[1]);
-    }
-
-
-    public function install() 
+    public function install()
     {
         $this->db->query("INSERT INTO `" . DB_PREFIX . "event` SET `code` = 'wappipro', `trigger` = 'post.order.history.add', `action` = 'module/wappipro/status_change'");
     }
 
     public function uninstall()
     {
+        $this->load->model('setting/setting');
         $this->db->query("DELETE FROM `" . DB_PREFIX . "event` WHERE `code` = 'wappipro'");
+        $this->model_setting_setting->deleteSetting('wappipro');
+        $this->model_setting_setting->deleteSetting('wappipro_test');
+        $this->model_setting_setting->deleteSetting('wappipro_platform');
     }
 }
