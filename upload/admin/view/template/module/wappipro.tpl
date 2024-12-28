@@ -53,6 +53,8 @@
                                 <p><?php echo $step_4; ?></p></li>
                             <li><span class="tag">5</span>
                                 <p><?php echo $step_5; ?></p></li>
+                            <li><span class="tag">6</span>
+                                <p><?php echo $step_6; ?></p></li>
                         </ul>
                     </div>
                 </div>

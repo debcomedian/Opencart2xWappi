@@ -39,37 +39,77 @@ class ControllerModuleWappiPro extends Controller
                 $username = isset($settings['wappipro_username']) ? $settings['wappipro_username'] : null;        
 
                 if (!empty($apiKey)) {
-                    $platform = isset($this->model_setting_setting->getSetting('wappipro_platform')['wappipro_platform']) ? $this->model_setting_setting->getSetting('wappipro_platform')['wappipro_platform'] : '';
+                    if (strlen($username) != 20) {
+                        $platform_settings = $this->model_setting_setting->getSetting('wappipro_platform');
+                        $platform = isset($platform_settings['wappipro_platform']) ? $platform_settings['wappipro_platform'] : '';
+                        
+                        $req = [
+                            'postfields' => json_encode([
+                                'recipient' => $order['telephone'],
+                                'body' => $statusMessage,
+                            ]),
+                            'header' => [
+                                "accept: application/json",
+                                "Authorization: " .  $apiKey,
+                                "Content-Type: application/json",
+                            ],
+                            'url' => 'https://wappi.pro/' . $platform . 'api/sync/message/send?profile_id=' . $username,
+                        ];
 
-                    $req = [
-                        'postfields' => json_encode([
-                            'recipient' => $order['telephone'],
-                            'body' => $statusMessage,
-                        ]),
-                        'header' => [
-                            "accept: application/json",
-                            "Authorization: " .  $apiKey,
-                            "Content-Type: application/json",
-                        ],
-                        'url' => 'https://wappi.pro/' . $platform . 'api/sync/message/send?profile_id=' . $username,
-                    ];
+                        if ($isSelfSendingActive === 'true') {
+                            $wappipro_settings = $this->model_setting_setting->getSetting('wappipro_test');
+                            $wappipro_self_phone = isset($wappipro_settings['wappipro_test_phone_number']) ? $wappipro_settings['wappipro_test_phone_number'] : '';
 
-                    if ($isSelfSendingActive === 'true') {
-                        $wappipro_self_phone = isset($this->model_setting_setting->getSetting('wappipro_test')["wappipro_test_phone_number"]) ? $this->model_setting_setting->getSetting('wappipro_test')["wappipro_test_phone_number"] : '';
-                        if (!empty($wappipro_self_phone)) {
-                            $req_self = [
-                                'postfields' => json_encode([
-                                    'recipient' => $wappipro_self_phone,
-                                    'body' => $statusMessage,
-                                ]),
-                                'header' => [
-                                    "accept: application/json",
-                                    "Authorization: " .  $apiKey,
-                                    "Content-Type: application/json",
-                                ],
-                                'url' => 'https://wappi.pro/' . $platform . 'api/sync/message/send?profile_id=' . $username,
-                            ];
-                            $response = json_decode($this->curlito(false, $req_self), true);
+                            if (!empty($wappipro_self_phone)) {
+                                $req_self = [
+                                    'postfields' => json_encode([
+                                        'recipient' => $wappipro_self_phone,
+                                        'body' => $statusMessage,
+                                    ]),
+                                    'header' => [
+                                        "accept: application/json",
+                                        "Authorization: " .  $apiKey,
+                                        "Content-Type: application/json",
+                                    ],
+                                    'url' => 'https://wappi.pro/' . $platform . 'api/sync/message/send?profile_id=' . $username,
+                                ];
+                                $response = json_decode($this->curlito(false, $req_self), true);
+                            }
+                        }
+                    } else {
+                        $req = [
+                            'postfields' => json_encode([
+                                'recipient' => $order['telephone'],
+                                'body' => $statusMessage,
+                                'cascade_id' => $username
+                            ]),
+                            'header' => [
+                                "accept: application/json",
+                                "Authorization: " .  $apiKey,
+                                "Content-Type: application/json",
+                            ],
+                            'url' => 'https://wappi.pro/csender/cascade/send',
+                        ];
+                        if ($isSelfSendingActive === 'true') {
+                            $wappipro_settings = $this->model_setting_setting->getSetting('wappipro_test');
+                            $wappipro_self_phone = isset($wappipro_settings['wappipro_test_phone_number']) ? $wappipro_settings['wappipro_test_phone_number'] : '';
+
+                            if (!empty($wappipro_self_phone)) {
+                                $req_self = [
+                                    'postfields' => json_encode([
+                                        'recipient' => $wappipro_self_phone,
+                                        'body' => $statusMessage,
+                                        'cascade_id' => $username
+                                    ]),
+                                    'header' => [
+                                        "accept: application/json",
+                                        "Authorization: " .  $apiKey,
+                                        "Content-Type: application/json",
+                                    ],
+                                    'url' => 'https://wappi.pro/csender/cascade/send',
+                                ];
+                                $response = json_decode($this->curlito(false, $req_self), true);
+                            }
                         }
                     }
 
