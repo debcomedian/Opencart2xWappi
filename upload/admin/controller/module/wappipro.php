@@ -18,6 +18,13 @@ class ControllerModuleWappiPro extends Controller
         "wappipro_apiKey"   => ["label" => "API Key", "type" => "isEmpty", "value" => "", "validate" => true],
     ];
 
+    public function __construct($registry) {
+        parent::__construct($registry);
+        $this->load->library('wappiproreplacements');
+        $this->replacementsHandler = new WappiProReplacements($registry);
+    }
+
+
     public function index()
     {
         if (!$this->isModuleEnabled()) {
@@ -81,6 +88,11 @@ class ControllerModuleWappiPro extends Controller
         $data['step_5'] = $this->language->get('step_5');
         $data['step_6'] = $this->language->get('step_6');
 
+        $data['text_available_variables'] = $this->language->get('text_available_variables');
+        $data['text_variable'] = $this->language->get('text_variable');
+        $data['text_description'] = $this->language->get('text_description');
+        $data['text_close'] = $this->language->get('text_close');
+
         $data['order_status_list'] = $this->model_localisation_order_status->getOrderStatuses();
         $data['wappipro_test_result'] = $this->testResult;
 
@@ -99,7 +111,40 @@ class ControllerModuleWappiPro extends Controller
         $data['column_left'] = $this->load->controller('common/column_left');
         $data['footer'] = $this->load->controller('common/footer');
 
+        $lastOrderId = $this->getLastOrderId();
+        if ($lastOrderId) {
+            $this->replacementsHandler->loadReplacements($lastOrderId);
+        
+            $data['replacements'] = $this->replacementsHandler->getReplacements();
+        } else {
+            $data['replacements'] = [];
+            $data['error_warning'][] = ['error' => 'No orders found.'];
+        }
+
         $this->response->setOutput($this->load->view('module/wappipro.tpl', $data));
+    }
+
+    public function getLastOrderId() {
+        $query = $this->db->query("SELECT order_id FROM `" . DB_PREFIX . "order` ORDER BY order_id DESC LIMIT 1");
+        if ($query->num_rows > 0) {
+            return (int)$query->row['order_id'];
+        }
+
+        return null;
+    }
+
+    private function getOrderReplacements($order_id)
+    {
+        $this->load->model('sale/order');
+        $order_info = $this->model_sale_order->getOrder($order_id);   
+        if (!$order_info) {
+            return [];
+        }
+        $replacements = [];
+        foreach ($order_info as $key => $value) {
+            $replacements[$key] = '{' . $key . '}';
+        }
+        return $replacements;
     }
 
     public function isModuleEnabled()

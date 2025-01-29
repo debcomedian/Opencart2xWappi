@@ -84,10 +84,43 @@
                             <label><?php echo $btn_duble_admin; ?></label>
                             <input type="checkbox" name="wappipro_admin_<?php echo $order_status['order_status_id']; ?>_active" value="true" <?php echo ($wappipro_admin_order_status_active[$order_status['order_status_id']] == 'true' ? 'checked="checked"' : ''); ?>>
                             <textarea name="wappipro_<?php echo $order_status['order_status_id']; ?>_message" class="form-control"><?php echo $wappipro_order_status_message[$order_status['order_status_id']]; ?></textarea>
-                            <div class="text-muted"><?php echo $btn_status_order_description; ?></div>
+                            <?php if (!empty($replacements)) { ?>
+                            <a href="#" data-toggle="modal" data-target="#variablesModal"><?php echo $text_available_variables; ?></a>
+                            <?php } else { ?><p style="color: red;"><?php echo $text_no_available_variables; } ?></p>
                         </div>
                     <?php } ?>
-                    <input type="submit" name="wappipro_save_settings" value="<?php echo $btn_token_save_all; ?>">
+                    <input type="submit" name="wappipro_save_settings" value="<?php echo $btn_token_save_all; ?>" class="btn btn-primary">
+                    <div class="modal fade" id="variablesModal" tabindex="-1" role="dialog" aria-labelledby="variablesModalLabel">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title" id="variablesModalLabel"><i class="fa fa-info-circle"></i> <?php echo $text_available_variables; ?></h4>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <table class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 30%;"><?php echo $text_variable; ?></th>
+                                            <th><?php echo $text_description; ?></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php foreach ($replacements as $variable => $description) { ?>
+                                            <tr>
+                                                <td><code><?php echo $variable; ?></code></td>
+                                                <td><?php echo $description; ?></td>
+                                            </tr>
+                                        <?php } ?>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal"><?php echo $text_close; ?></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 </form>
             </div>
         </div>
